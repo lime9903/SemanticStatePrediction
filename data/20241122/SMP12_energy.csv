@@ -1,0 +1,5 @@
+Time,Device Label,Device Name,Location,Component,Component Label,Capability,Attribute,Value
+2024-11-22T00:20:37.000+00:00,SMP12,SMP12,Laboratory 207,main,main,energyMeter,energy,0.052
+2024-11-22T00:51:14.000+00:00,SMP12,SMP12,Laboratory 207,main,main,energyMeter,energy,0.073
+2024-11-22T01:01:39.000+00:00,SMP12,SMP12,Laboratory 207,main,main,energyMeter,energy,0.081
+2024-11-22T01:33:47.000+00:00,SMP12,SMP12,Laboratory 207,main,main,energyMeter,energy,0.104

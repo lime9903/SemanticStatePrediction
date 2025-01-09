@@ -1,0 +1,11 @@
+Time,Device Label,Device Name,Location,Component,Component Label,Capability,Attribute,Value
+2024-11-22T00:07:35.000+00:00,SMP05,SMP05,Laboratory 207,main,main,energyMeter,energy,4242.827
+2024-11-22T00:17:35.000+00:00,SMP05,SMP05,Laboratory 207,main,main,energyMeter,energy,4247.409
+2024-11-22T00:27:35.000+00:00,SMP05,SMP05,Laboratory 207,main,main,energyMeter,energy,4253.284
+2024-11-22T00:37:35.000+00:00,SMP05,SMP05,Laboratory 207,main,main,energyMeter,energy,4260.999
+2024-11-22T00:48:35.000+00:00,SMP05,SMP05,Laboratory 207,main,main,energyMeter,energy,4269.813
+2024-11-22T00:58:35.000+00:00,SMP05,SMP05,Laboratory 207,main,main,energyMeter,energy,4275.399
+2024-11-22T01:08:35.000+00:00,SMP05,SMP05,Laboratory 207,main,main,energyMeter,energy,4280.496
+2024-11-22T01:18:35.000+00:00,SMP05,SMP05,Laboratory 207,main,main,energyMeter,energy,4285.682
+2024-11-22T01:28:35.000+00:00,SMP05,SMP05,Laboratory 207,main,main,energyMeter,energy,4292.368
+2024-11-22T01:38:35.000+00:00,SMP05,SMP05,Laboratory 207,main,main,energyMeter,energy,4299.867

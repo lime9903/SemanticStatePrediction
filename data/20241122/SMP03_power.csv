@@ -1,0 +1,11 @@
+Time,Device Label,Device Name,Location,Component,Component Label,Capability,Attribute,Value
+2024-11-22T00:18:00.000+00:00,SMP03,SMP03,Laboratory 207,main,main,powerMeter,power,0.411
+2024-11-22T00:28:00.000+00:00,SMP03,SMP03,Laboratory 207,main,main,powerMeter,power,0.423
+2024-11-22T00:38:00.000+00:00,SMP03,SMP03,Laboratory 207,main,main,powerMeter,power,0.425
+2024-11-22T00:48:00.000+00:00,SMP03,SMP03,Laboratory 207,main,main,powerMeter,power,0.423
+2024-11-22T00:58:00.000+00:00,SMP03,SMP03,Laboratory 207,main,main,powerMeter,power,0.399
+2024-11-22T01:08:00.000+00:00,SMP03,SMP03,Laboratory 207,main,main,powerMeter,power,33.763
+2024-11-22T01:18:00.000+00:00,SMP03,SMP03,Laboratory 207,main,main,powerMeter,power,0.15
+2024-11-22T01:28:00.000+00:00,SMP03,SMP03,Laboratory 207,main,main,powerMeter,power,33.814
+2024-11-22T01:38:00.000+00:00,SMP03,SMP03,Laboratory 207,main,main,powerMeter,power,33.756
+2024-11-22T01:48:00.000+00:00,SMP03,SMP03,Laboratory 207,main,main,powerMeter,power,33.752

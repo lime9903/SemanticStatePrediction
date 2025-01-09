@@ -1,0 +1,5 @@
+Time,Device Label,Device Name,Location,Component,Component Label,Capability,Attribute,Value
+2024-11-22T00:11:34.000+00:00,SMP13,SMP13,Laboratory 207,main,main,powerMeter,power,6.02
+2024-11-22T00:46:47.000+00:00,SMP13,SMP13,Laboratory 207,main,main,powerMeter,power,6
+2024-11-22T01:11:09.000+00:00,SMP13,SMP13,Laboratory 207,main,main,powerMeter,power,5.72
+2024-11-22T01:56:31.000+00:00,SMP13,SMP13,Laboratory 207,main,main,powerMeter,power,6
