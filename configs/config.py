@@ -13,13 +13,16 @@ def parse_arguments():
 
     # environment
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-    parser.add_argument('--data_dir_path', type=str, default=r'C:\smartthings_data\csv_data\20241128',
+    parser.add_argument('--data_dir_path', type=str, default=r'C:\Users\lime9\PycharmProjects\semanticProject\data',
                         help='Path to data directory')
-    parser.add_argument('--save_path', type=str, default=r'C:\Users\lime9\PycharmProjects\semanticProject',
-                        help='Path to save')
+    parser.add_argument('--save_out_path', type=str, default=r'C:\Users\lime9\PycharmProjects\semanticProject\outputs',
+                        help='Path to save outputs')
     parser.add_argument('--save_vis_path', type=str,
-                        default=r'C:\Users\lime9\PycharmProjects\semanticProject\visualization',
+                        default=r"C:\Users\lime9\PycharmProjects\semanticProject\visualization",
                         help='Path to save visualization')
+
+    # data
+    parser.add_argument('--num_dc', type=int, default=4, help='Number of data collection, Available:[1, 2, 3, 4]')
 
     # model
     parser.add_argument('-b', dest='batch_size', type=int, default=50, help='minibatch size')
