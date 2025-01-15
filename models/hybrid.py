@@ -9,7 +9,7 @@ class CNN_RNN(nn.Module):
     def __init__(self, input_size, num_classes):
         super(CNN_RNN, self).__init__()
         self.cnn = nn.Sequential(
-            nn.Conv1d(1, 32, kernel_size=3, padding=1),
+            nn.Conv1d(input_size, 32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.Conv1d(32, 32, kernel_size=3, padding=1),
             nn.ReLU(),
@@ -33,8 +33,9 @@ class CNN_RNN(nn.Module):
         )
 
     def forward(self, x):
-        if x.dim() == 2:
-            x = x.unsqueeze(1)
+        # if x.dim() == 2:
+        #     x = x.unsqueeze(1)
+        x = x.permute(0, 2, 1)
         x = self.cnn(x)
         x = x.permute(0, 2, 1)
         _, h_n1 = self.rnn1(x)
@@ -50,7 +51,7 @@ class CNN_LSTM(nn.Module):
     def __init__(self, input_size, num_classes):
         super(CNN_LSTM, self).__init__()
         self.cnn = nn.Sequential(
-            nn.Conv1d(1, 32, kernel_size=3, padding=1),
+            nn.Conv1d(input_size, 32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.Conv1d(32, 32, kernel_size=3, padding=1),
             nn.ReLU(),
@@ -91,7 +92,7 @@ class DAE_RNN(nn.Module):
     def __init__(self, input_size, num_classes):
         super(DAE_RNN, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Conv1d(1, 32, kernel_size=3, padding=1),
+            nn.Conv1d(input_size, 32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
             nn.Conv1d(32, 64, kernel_size=3, padding=1),
@@ -137,7 +138,7 @@ class DAE_LSTM(nn.Module):
     def __init__(self, input_size, num_classes):
         super(DAE_LSTM, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Conv1d(1, 32, kernel_size=3, padding=1),
+            nn.Conv1d(input_size, 32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
             nn.Conv1d(32, 64, kernel_size=3, padding=1),

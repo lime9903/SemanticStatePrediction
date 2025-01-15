@@ -7,12 +7,13 @@ from pathlib import Path
 from itertools import product
 
 
-class ApplianceDataLoader:
-    def __init__(self, num_dc, data_dir_path):
-        assert num_dc in [1, 2, 3, 4], "num_dc must be 1, 2, 3 or 4."
-        assert Path(data_dir_path).exists(), "data_dir_path does not exist."
-        self.num_dc = num_dc
-        self.data_dir_path = data_dir_path
+class DataCollectionLoader:
+    def __init__(self, args):
+        assert args.num_dc in [1, 2, 3, 4], "num_dc must be 1, 2, 3 or 4."
+        assert Path(args.data_dir_path).exists(), "data_dir_path does not exist."
+        self.args = args
+        self.num_dc = args.num_dc
+        self.data_dir_path = args.data_dir_path
         self.dc_appliances_mapping = []  # total dc appliances mapping
         self.dc_activities_mapping = []  # total dc activities mapping
         self.appliances_mapping = None   # specified appliances mapping
@@ -248,7 +249,7 @@ class ApplianceDataLoader:
 
         # Data collection #4 - activity time interval
         dc4_time_interval = [
-            (None, time(14, 5), ('abs', 'abs')),
+            (time(14, 0), time(14, 5), ('abs', 'abs')),
             (time(14, 5), time(14, 10), ('wpc', 'abs')),
             (time(14, 10), time(14, 15), ('wpc', 'wpc')),
             (time(14, 15), time(14, 25), ('wpc', 'wopc')),
@@ -262,7 +263,7 @@ class ApplianceDataLoader:
             (time(15, 30), time(15, 40), ('l', 'abs')),
             (time(15, 40), time(15, 50), ('wopc', 'abs')),
             (time(15, 50), time(15, 55), ('wpc', 'abs')),
-            (time(15, 55), None, ('abs', 'abs'))
+            (time(15, 55), time(16, 0), ('abs', 'abs'))
         ]
 
         self.dc_time_interval.extend([
@@ -343,7 +344,7 @@ class ApplianceDataLoader:
 
         return combined_df
 
-    def visualize(self, save_vis_path):
+    def plot_power_consumption(self, save_vis_path):
         df = self.load_data()
         sns.set(style="whitegrid")
         unique_labels = df['Label'].unique()
@@ -405,12 +406,12 @@ class ApplianceDataLoader:
             plt.close()
             print(f"Saved graph: {individual_output_file}")
 
-    def preprocessing(self, raw_df):
+    def load_preprocess(self):
         """
         Assign states to the DataFrame based on the given time intervals and corresponding states.
         Also calculates total power consumption and adds Unix timestamp.
         """
-        df = raw_df.copy()
+        df = self.load_data()
 
         for i in range(self.num_users):
             df[f'user{i + 1}_activity'] = None
@@ -442,6 +443,11 @@ class ApplianceDataLoader:
         df.drop(columns=['Time'], inplace=True)
         df['state'] = df.apply(self.get_current_state, axis=1)
 
+        if self.args.make_equal_dist:
+            df = df[df['state'] != 'Unknown']
+
+        self.save_to_csv(df, save_data_path=self.args.save_data_path)
+
         return df
 
     def get_state_id(self, activities):
@@ -462,12 +468,12 @@ class ApplianceDataLoader:
 
         return self.get_state_id(activities)
 
-    def save_to_csv(self, df, save_out_path=None):
+    def save_to_csv(self, df, save_data_path=None):
         """
         Save the processed DataFrame to a CSV file.
         """
-        if save_out_path:
-            save_dir = Path(save_out_path)
+        if save_data_path:
+            save_dir = Path(save_data_path)
         else:
             save_dir = Path.cwd()
 
@@ -531,40 +537,9 @@ class ApplianceDataLoader:
         plt.tight_layout()
         plt.show()
 
-        return 0
+        return
 
 
 # Debug Example
 # if __name__ == '__main__':
-#     num_dc = 4  # TODO: argparse 넣기
-#     data_dir_path = r'C:\Users\lime9\PycharmProjects\semanticProject\data'
-#     loader = ApplianceDataLoader(num_dc, data_dir_path)
-#     df = loader.load_data()
-#     print(df.head())
-#
-#     print("DC Number:", loader.num_dc)
-#     print("DC Appliances Mapping:", loader.dc_appliances_mapping)
-#     print("DC Activity Mapping:", loader.dc_activities_mapping)
-#     print("Appliances Mapping:", loader.appliances_mapping)
-#     print("Activity Mapping:", loader.activities_mapping)
-#     print("DC Actions:", loader.dc_actions)
-#     print("Actions:", loader.actions)
-#     print("DC Users:", loader.dc_users)
-#     print("DC Users Number:", loader.dc_num_users)
-#     print("Users:", loader.users)
-#     print("Users Number:", loader.num_users)
-#     print("DC States:", loader.dc_states)
-#     print("DC State indices:", loader.dc_state_ids)
-#     print("States:", loader.states)
-#     print("State indices:", loader.state_ids)
-#     print("DC Time Interval:", loader.dc_time_interval)
-#     print("Time Interval:", loader.time_interval)
-#
-#     save_vis_path = r"C:\Users\lime9\PycharmProjects\semanticProject\visualization"
-#     loader.visualize(save_vis_path)
-#
-#     state_df = loader.preprocessing(df)
-#     print(state_df.head())
-#
-#     loader.save_to_csv(state_df, save_out_path=r'C:\Users\lime9\PycharmProjects\semanticProject\outputs')
-#     loader.plot_state_distribution(state_df)
+
