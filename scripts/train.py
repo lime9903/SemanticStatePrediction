@@ -17,6 +17,23 @@ from dataloader.preprocess_dataset import DataCollectionLoader
 from dataloader.state_dataset import StateDataProcessor
 
 
+def prepare_dc_argument():
+    assert args.num_dc in [1, 2, 3, 4]
+
+    # check input size
+    if args.aggregate:
+        args.input_size = 2
+    else:
+        args.input_size = 7
+
+    # check output size
+    args.num_classes = len(dc_loader.states)
+
+    # check class names
+    args.class_names = df['state'].unique().tolist()
+    return
+
+
 def plot_training_history(history: Dict, save_path: str):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
 
@@ -74,7 +91,6 @@ class ModelTrainer:
         self.train_losses = []
         self.val_losses = []
         self.val_accuracies = []
-        self.class_names = class_names
 
         self.save_dir = Path(args.save_model_path)
         self.save_dir.mkdir(parents=True, exist_ok=True)
@@ -199,7 +215,7 @@ class ModelTrainer:
         test_loss, test_accuracy, predictions, true_labels = self.evaluate(test_loader)
 
         report = classification_report(true_labels, predictions,
-                                       target_names=self.class_names,
+                                       target_names=args.class_names,
                                        output_dict=True)
 
         return {
@@ -217,6 +233,7 @@ if __name__ == '__main__':
     print('[Start Execution]')
     # Configuration
     args = parse_arguments()
+    args.num_dc = 2  # TODO: choice [1, 2, 3, 4] depends on your dc choice
 
     if args.debug:
         args.device = torch.device("cpu")
@@ -235,9 +252,7 @@ if __name__ == '__main__':
     processor = StateDataProcessor(args)
     df = dc_loader.load_preprocess()
     train_loader, test_loader, train_loader_prac, test_loader_prac = processor.create_data_loaders(df)
-    args.input_size = 2
-    args.num_classes = len(dc_loader.states)
-    class_names = df['state'].unique().tolist()   # TODO: define in argparse?
+    prepare_dc_argument()
 
     if args.debug:
         print("\n[Arguments Configuration]")
@@ -255,6 +270,9 @@ if __name__ == '__main__':
         print("Number of States:", len(dc_loader.states))
         print("State indices:", dc_loader.state_ids)
         print("Time Interval:", dc_loader.time_interval)
+        print("Input Size:", args.input_size)
+        print("Output Size:", args.num_classes)
+        print("Class names:", args.class_names)
 
         print("\n[Data Shape]")
         print('X_train.shape:', processor.X_train.shape)
@@ -292,7 +310,7 @@ if __name__ == '__main__':
     # Visualization
     plot_training_history(history, args.save_vis_path)
     conf_matrix = confusion_matrix(test_results['true_labels'], test_results['predictions'])
-    plot_confusion_matrix(conf_matrix, class_names, args.save_vis_path)
+    plot_confusion_matrix(conf_matrix, args.class_names, args.save_vis_path)
 
     if args.debug:
         print("\nTest Accuracy:", test_results['test_accuracy'])

@@ -221,11 +221,8 @@ class DataCollectionLoader:
 
         # Data collection #2 - activity time interval
         dc2_time_interval = [
-            (None, time(15, 15), ('abs', 'abs', 'abs')),
-            (time(15, 15), time(15, 17), ('wpc', 'abs', 'abs')),
-            (time(15, 17), time(15, 18), ('wpc', 'gw', 'abs')),
-            (time(15, 18), time(15, 20), ('wpc', 'wpc', 'abs')),
-            (time(15, 20), time(15, 21), ('wpc', 'wpc', 'gw')),
+            (time(15, 15), time(15, 18), ('wpc', 'abs', 'abs')),
+            (time(15, 18), time(15, 21), ('wpc', 'wpc', 'abs')),
             (time(15, 21), time(15, 30), ('wpc', 'wpc', 'wpc')),
             (time(15, 30), time(15, 35), ('wpc', 'wopc', 'wpc')),
             (time(15, 35), time(15, 37), ('wpc', 'wopc', 'l')),
@@ -235,12 +232,9 @@ class DataCollectionLoader:
             (time(15, 55), time(16, 00), ('wopc', 'wopc', 'wpc')),
             (time(16, 00), time(16, 10), ('m', 'm', 'm')),
             (time(16, 10), time(16, 12), ('wpc', 'l', 'wopc')),
-            (time(16, 12), time(16, 16), ('wpc', 'abs', 'wopc')),
-            (time(16, 16), time(16, 25), ('wpc', 'wpc', 'wopc')),
-            (time(16, 25), time(16, 26), ('gow', 'wpc', 'gow')),
-            (time(16, 26), time(16, 27), ('abs', 'wpc', 'abs')),
-            (time(16, 27), time(16, 28), ('abs', 'gow', 'abs')),
-            (time(16, 28), None, ('abs', 'abs', 'abs'))
+            (time(16, 12), time(16, 25), ('wpc', 'wpc', 'wopc')),
+            (time(16, 25), time(16, 27), ('abs', 'wpc', 'abs')),
+            (time(16, 27), time(16, 30), ('abs', 'abs', 'abs'))
         ]
 
         # Data collection #3 - activity time interval
@@ -538,8 +532,3 @@ class DataCollectionLoader:
         plt.show()
 
         return
-
-
-# Debug Example
-# if __name__ == '__main__':
-

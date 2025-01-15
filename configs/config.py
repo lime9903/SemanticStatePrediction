@@ -2,11 +2,19 @@
 Configuration file for main
 """
 import os
+import ast
 import argparse
 from IPython import get_ipython
 
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 SAVE_PATH = os.path.join(ROOT_PATH, 'outputs')
+
+
+def arg_as_list(s):
+    v = ast.literal_eval(s)
+    if type(v) is not list:
+        raise argparse.ArgumentTypeError(f'Argument {s} must be a list')
+    return v
 
 
 def parse_arguments():
@@ -32,17 +40,21 @@ def parse_arguments():
                         default="standard", help='Type of scaler')
     parser.add_argument('-eq', '--make_equal_dist', action='store_true', default=True,
                         help='Whether data distribution is equal or not')
+    parser.add_argument('-agg', dest='aggregate', action='store_true', default=True,
+                        help='Aggregated dataset or not')
 
     # model
-    parser.add_argument('-i', dest='input_size', type=int, default=2, help='Size of input for deep learning model')
-    parser.add_argument('-c', dest='num_classes', type=int, default=343, help='Number of classes for deep learning model')
+    parser.add_argument('-i', dest='input_size', type=int, default=2, choices=[2, 7],
+                        help='Size of input for deep learning model')
+    parser.add_argument('-c', dest='num_classes', type=int, default=343,
+                        help='Number of classes for deep learning model')
     parser.add_argument('-b', dest='batch_size', type=int, default=32, help='minibatch size')
     parser.add_argument('-nepoch', dest='num_epochs', type=int, default=50, help='number of epochs')
     parser.add_argument('-lr', dest='learning_rate', type=float, default=1e-3, help='learning rate')
     parser.add_argument('-p', dest='patience', type=int, default=10, help='early stopping patience')
     parser.add_argument('-ts', dest='test_size', type=float, default=0.2, help='Size of test set')
     parser.add_argument('-seq_len', dest='sequence_length', type=int, default=32, help='Length of sequence')
-    # parser.add_argument('-cn', dest='class_name', type=object, default=[], help='Unique class name')
+    parser.add_argument('--class_names', default=[], type=arg_as_list, help='List of class names')
 
     # Check if running in Jupyter notebook
     try:
