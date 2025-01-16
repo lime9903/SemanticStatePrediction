@@ -2,10 +2,10 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
-from sklearn.model_selection import train_test_split
 
 
 # TODO: preprocess_data - purpose for is_train?
+# TODO: sequence - equal distribution for each states?
 class StateDataProcessor:
     """
     Data processor for state prediction that handles encoding and scaling.
@@ -22,11 +22,11 @@ class StateDataProcessor:
         self.numerical_cols = ['Power (W)', 'Energy (Wh)', 'Total Power (W)', 'Unix Time']
 
         self.X_train = None
+        self.X_val = None
         self.X_test = None
         self.y_train = None
+        self.y_val = None
         self.y_test = None
-        self.X_train_prac = None
-        self.X_test_prac = None
 
     def preprocess_data(self, df, is_train=True):
         """
@@ -69,28 +69,35 @@ class StateDataProcessor:
 
         X = processed_df.drop(columns=['state'])
         y = processed_df['state']
-        X_practical = X.drop(columns=[col for col in practical_drop_cols
-                                      if col in X.columns])
 
-        train_size = round(len(X) * (1 - self.args.test_size))
+        train_size = round(len(X) * (1 - self.args.test_size - self.args.val_size))
+        val_size = round(len(X) * self.args.val_size)
+
         X_train = X[:train_size]
-        X_test = X[train_size:]
+        X_temp = X[train_size:]
         y_train = y[:train_size]
-        y_test = y[train_size:]
+        y_temp = y[train_size:]
 
-        # for aggregated dataset
-        X_train_prac = X_practical[:train_size]
-        X_test_prac = X_practical[train_size:]
+        X_val = X_temp[:val_size]
+        X_test = X_temp[val_size:]
+        y_val = y_temp[:val_size]
+        y_test = y_temp[val_size:]
+
+        if self.args.aggregate:
+            # for aggregated dataset
+            X_practical = X.drop(columns=[col for col in practical_drop_cols if col in X.columns])
+            X_train = X_practical[:train_size]
+            X_val = X_practical[train_size:train_size + val_size]
+            X_test = X_practical[train_size + val_size:]
 
         self.X_train = X_train
+        self.X_val = X_val
         self.X_test = X_test
         self.y_train = y_train
+        self.y_val = y_val
         self.y_test = y_test
-        self.X_train_prac = X_train_prac
-        self.X_test_prac = X_test_prac
 
-        return (self.X_train, self.X_test, self.y_train, self.y_test,
-                self.X_train_prac, self.X_test_prac)
+        return self.X_train, self.X_val, self.X_test, self.y_train, self.y_val, self.y_test
 
     def create_sequences(self, data):
         sequences = []
@@ -104,30 +111,27 @@ class StateDataProcessor:
         Create PyTorch DataLoaders for training and testing.
         """
         processed_df = self.preprocess_data(df, is_train=True)
-        (X_train, X_test, y_train, y_test, X_train_prac, X_test_prac) = self.prepare_train_test_data(processed_df)
+        X_train, X_val, X_test, y_train, y_val, y_test = self.prepare_train_test_data(processed_df)
         X_train_seq = self.create_sequences(X_train)
+        X_val_seq = self.create_sequences(X_val)
         X_test_seq = self.create_sequences(X_test)
-        X_train_prac_seq = self.create_sequences(X_train_prac)
-        X_test_prac_seq = self.create_sequences(X_test_prac)
 
         X_train_tensor = torch.tensor(X_train_seq, dtype=torch.float32)
+        X_val_tensor = torch.tensor(X_val_seq, dtype=torch.float32)
         X_test_tensor = torch.tensor(X_test_seq, dtype=torch.float32)
         y_train_tensor = torch.tensor(y_train.values, dtype=torch.long)
+        y_val_tensor = torch.tensor(y_val.values, dtype=torch.long)
         y_test_tensor = torch.tensor(y_test.values, dtype=torch.long)
-        X_train_prac_tensor = torch.tensor(X_train_prac_seq, dtype=torch.float32)
-        X_test_prac_tensor = torch.tensor(X_test_prac_seq, dtype=torch.float32)
 
         train_dataset = StateDataset(X_train_tensor, y_train_tensor)
+        val_dataset = StateDataset(X_val_tensor, y_val_tensor)
         test_dataset = StateDataset(X_test_tensor, y_test_tensor)
-        train_dataset_prac = StateDataset(X_train_prac_tensor, y_train_tensor)
-        test_dataset_prac = StateDataset(X_test_prac_tensor, y_test_tensor)
 
         train_loader = DataLoader(train_dataset, batch_size=self.args.batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=self.args.batch_size, shuffle=False)
         test_loader = DataLoader(test_dataset, batch_size=self.args.batch_size, shuffle=False)
-        train_loader_prac = DataLoader(train_dataset_prac, batch_size=self.args.batch_size, shuffle=True)
-        test_loader_prac = DataLoader(test_dataset_prac, batch_size=self.args.batch_size, shuffle=False)
 
-        return train_loader, test_loader, train_loader_prac, test_loader_prac
+        return train_loader, val_loader, test_loader
 
 
 class StateDataset(Dataset):

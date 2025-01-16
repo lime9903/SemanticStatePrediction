@@ -2,11 +2,11 @@
 Semantic state prediction with power consumption data collected by smart plugs.
 
 
-## Code:: Usage
+## 🖥️ Code:: Usage
 `pip install -r requirements.txt`
 
 
-## Code:: Explanation
+## 🖥️ Code:: Explanation
 TBU
 
 
@@ -42,7 +42,7 @@ TBU
 | Base Sensors    | 2 units                             |
 | Reference       | Camera                              |
 
-![Experimental Environment Map](outputs%2Fvisualization%2Fdc2_experimental_environment_map.png)
+![Experimental Environment Map](docs%2Fdc2_experimental_environment_map.png)
 
 ### Behavior and Device Mapping
 
@@ -58,7 +58,7 @@ TBU
 
 ### Scenario
 
-![2nd Test Data Collection](outputs%2Fvisualization%2Fdc2-scenario.png)
+![2nd Test Data Collection](docs%2Fdc2-scenario.png)
 
 
 ## 🗃️ Data Collection:: 4th Test Data Acquisition
@@ -101,7 +101,7 @@ TBU
 
 #### State Machine Graph
 
-![State Machine Graph](outputs%2Fvisualization%2Fdc4_state_machine_graph.png)
+![State Machine Graph](docs%2Fdc4_state_machine_graph.png)
 
 ### Scenario
 
@@ -114,7 +114,7 @@ TBU
 | Hae-won    | abs | abs | wpc | wopc| l   | l   | wopc| wpc | wpc | wpc | wpc | abs | abs | abs | abs |
 | State      | S0  | S1  | S3  | S7  | S11 | S9  | S5  | S2  | S3  | S6  | S10 | S8  | S4  | S1  | S0  |
 
-![4th Test Data Collection](outputs%2Fvisualization%2Fdc4-scenario.png)
+![4th Test Data Collection](docs%2Fdc4-scenario.png)
 
 ### Behavior Details
 - Before "Lunch," PCs are set to sleep mode.

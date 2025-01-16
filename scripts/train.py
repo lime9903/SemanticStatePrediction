@@ -1,20 +1,28 @@
 import os
 import time
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import Dict, Tuple, List
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 import torch
+from matplotlib import rcParams
+from matplotlib.ticker import MaxNLocator
+from sklearn.metrics import classification_report, confusion_matrix
 from torch import nn
 from torch import optim
-from sklearn.metrics import classification_report, confusion_matrix
 
 from configs.config import parse_arguments
-from models.hybrid import CNN_RNN, CNN_LSTM, DAE_RNN, DAE_LSTM
 from dataloader.preprocess_dataset import DataCollectionLoader
 from dataloader.state_dataset import StateDataProcessor
+from models.hybrid import CNN_RNN, CNN_LSTM, DAE_RNN, DAE_LSTM
+
+sns.set_style("whitegrid")
+rcParams['font.family'] = 'sans-serif'
+rcParams['font.sans-serif'] = ['Arial']
+rcParams['figure.facecolor'] = 'white'
 
 
 def prepare_dc_argument():
@@ -63,29 +71,163 @@ def plot_training_history(history: Dict, save_path: str):
     return fig
 
 
-def plot_confusion_matrix(conf_matrix: np.ndarray, class_names: List[str], save_path: str):
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues',
-                xticklabels=class_names, yticklabels=class_names, cbar_kws={'label': 'Counts'})
-    plt.title('Confusion Matrix', fontsize=14)
-    plt.xlabel('Predicted', fontsize=12)
-    plt.ylabel('True', fontsize=12)
+def plot_test_accuracies(results: Dict[str, Dict], save_path: str):
+    """
+    Plot the test accuracies of different models
+    """
+    plt.figure(figsize=(12, 7))
+    model_names = list(results.keys())
+    accuracies = [results[model]['test_accuracy'] for model in model_names]
+    data = pd.DataFrame({"Model": model_names, "Accuracy": accuracies})
+    base_colors = sns.color_palette("husl", len(model_names))
+    transparent_colors = [(r, g, b, 0.75) for r, g, b in base_colors]
+
+    ax = sns.barplot(
+        data=data,
+        x="Model",
+        y="Accuracy",
+        hue="Model",
+        palette=transparent_colors,
+        legend=False
+    )
+
+    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+    ax.set_axisbelow(True)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_linewidth(0.5)
+    ax.spines['bottom'].set_linewidth(0.5)
+
+    plt.xlabel('Model', fontsize=12, fontweight='bold', labelpad=15)
+    plt.ylabel('Test Accuracy', fontsize=12, fontweight='bold', labelpad=15)
+    plt.title('Model Performance Comparison',
+              fontsize=16,
+              fontweight='bold',
+              pad=20,
+              color='#2f2f2f')
+
+    plt.ylim(0, 1.1)
+    plt.xticks(rotation=45, ha='right', fontsize=11)
+    plt.yticks(fontsize=11)
+
+    for i, acc in enumerate(accuracies):
+        plt.text(i, acc + 0.02, f"{acc:.3f}",
+                 ha='center',
+                 va='bottom',
+                 fontsize=11,
+                 fontweight='bold',
+                 color='#2f2f2f')
+
+    ax.set_facecolor('#f8f9fa')
+    plt.tight_layout()
+
+    file_name = os.path.join(save_path, "test_accuracies_comparison.png")
+    plt.savefig(file_name, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved accuracy comparison graph: {file_name}")
+
+
+def plot_confusion_matrix(conf_matrix: np.ndarray, class_names: List[str], file_name: str):
+    plt.figure(figsize=(12, 10))
+    cmap = sns.color_palette("YlOrRd", as_cmap=True)
+    norm_conf_matrix = conf_matrix.astype('float') / conf_matrix.sum(axis=1)[:, np.newaxis]
+
+    ax = sns.heatmap(conf_matrix,
+                     annot=True,
+                     fmt='d',
+                     cmap=cmap,
+                     xticklabels=class_names,
+                     yticklabels=class_names,
+                     cbar_kws={'label': 'Number of Samples',
+                               'orientation': 'vertical'},
+                     square=True)
+
+    for i in range(conf_matrix.shape[0]):
+        for j in range(conf_matrix.shape[1]):
+            text = ax.texts[i * conf_matrix.shape[1] + j]
+            plt.text(j + 0.5, i + 0.7, f'({norm_conf_matrix[i, j]:.1%})',
+                     ha='center', va='center',
+                     color='black' if norm_conf_matrix[i, j] < 0.5 else 'white',
+                     fontsize=9)
+
+    plt.title('Confusion Matrix',
+              fontsize=16,
+              fontweight='bold',
+              pad=20,
+              color='#2f2f2f')
+    plt.xlabel('Predicted Class', fontsize=12, fontweight='bold', labelpad=15)
+    plt.ylabel('True Class', fontsize=12, fontweight='bold', labelpad=15)
 
     plt.xticks(rotation=45, ha='right', fontsize=10)
     plt.yticks(rotation=0, fontsize=10)
+    plt.tight_layout()
 
-    file_name = os.path.join(save_path, f"dc{args.num_dc}_confusion_matrix.png")
     plt.savefig(file_name, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved graph: {file_name}")
-    return plt
+    print(f"Saved confusion matrix: {file_name}")
+
+
+def plot_training_losses(histories: Dict[str, Dict], save_path: str):
+    """
+    Plot enhanced training and validation losses
+    """
+    plt.figure(figsize=(14, 8))
+    colors = sns.color_palette("husl", len(histories))
+
+    for idx, (model_name, history) in enumerate(histories.items()):
+        plt.plot(history['train_losses'],
+                 label=f'{model_name} (Train)',
+                 color=colors[idx],
+                 linewidth=2.5,
+                 alpha=0.9)
+        plt.plot(history['val_losses'],
+                 label=f'{model_name} (Val)',
+                 linestyle='--',
+                 color=colors[idx],
+                 linewidth=2,
+                 alpha=0.9)
+
+    plt.grid(True, linestyle='--', alpha=0.3, which='both')
+    plt.gca().set_axisbelow(True)
+
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+
+    plt.xlabel('Epoch', fontsize=12, fontweight='bold', labelpad=15)
+    plt.ylabel('Loss', fontsize=12, fontweight='bold', labelpad=15)
+    plt.title('Training and Validation Loss Curves',
+              fontsize=16,
+              fontweight='bold',
+              pad=20,
+              color='#2f2f2f')
+
+    legend = plt.legend(fontsize=11,
+                        frameon=True,
+                        facecolor='white',
+                        edgecolor='none',
+                        shadow=True,
+                        loc='center left',
+                        bbox_to_anchor=(1, 0.5))
+    legend.get_frame().set_alpha(0.9)
+
+    plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.gca().set_facecolor('#f8f9fa')
+    plt.tight_layout()
+
+    file_name = os.path.join(save_path, "training_losses_comparison.png")
+    plt.savefig(file_name, dpi=300, bbox_inches='tight', facecolor='white')
+    plt.close()
+    print(f"Saved loss comparison graph: {file_name}")
 
 
 class ModelTrainer:
-    def __init__(self, model, criterion, optimizer, args):
+    def __init__(self, model, args):
         self.model = model.to(args.device)
-        self.criterion = criterion
-        self.optimizer = optimizer
+        self.criterion = nn.CrossEntropyLoss()
+        self.optimizer = optim.Adam(model.parameters())
         self.args = args
         self.device = args.device
         self.train_losses = []
@@ -149,7 +291,7 @@ class ModelTrainer:
         best_val_loss = float('inf')
         patience_counter = 0
         start_time = time.time()
-        best_model_path = self.save_dir / f'dc{args.num_dc}_best_model.pt'
+        best_model_path = self.save_dir / f'dc{args.num_dc}_best_{args.model_name}_model.pt'
 
         for epoch in range(self.args.num_epochs):
             self.model.train()
@@ -208,15 +350,15 @@ class ModelTrainer:
             'val_losses': self.val_losses,
             'val_accuracies': self.val_accuracies,
             'best_val_loss': best_val_loss,
-            'training_time': training_time
+            'training_time': training_time,
         }
 
     def test(self, test_loader) -> Dict:
         test_loss, test_accuracy, predictions, true_labels = self.evaluate(test_loader)
-
         report = classification_report(true_labels, predictions,
                                        target_names=args.class_names,
-                                       output_dict=True)
+                                       output_dict=True,
+                                       zero_division=0)
 
         return {
             'test_loss': test_loss,
@@ -227,13 +369,69 @@ class ModelTrainer:
         }
 
 
-# TODO: train과 test의 class distribution 출력하기
-# Debug Example
+def train_and_evaluate_model(model_class, model_name, train_loader, val_loader, test_loader, args) -> Tuple[
+    Dict, Dict]:
+    """
+    Train, validate, and test a model.
+    """
+    print(f"\n[{model_name} Training]")
+    args.model_name = model_name
+    model = model_class(args.input_size, args.num_classes)
+    trainer = ModelTrainer(model, args)
+
+    # Train the model
+    history = trainer.train(train_loader, val_loader)
+
+    # Test the model
+    print(f"\n[{model_name} Testing]")
+    test_results = trainer.test(test_loader)
+    print("\nTest Accuracy:", test_results['test_accuracy'])
+
+    return history, test_results
+
+
+def train_multiple_models(model_classes: Dict[str, object], train_loader, val_loader, test_loader, args) -> Tuple[
+    Dict, Dict]:
+    """
+    Train and evaluate multiple models.
+    """
+    histories = {}
+    results = {}
+
+    for model_name, model_class in model_classes.items():
+        history, test_results = train_and_evaluate_model(
+            model_class, model_name, train_loader, val_loader, test_loader, args
+        )
+        histories[model_name] = history
+        results[model_name] = test_results
+
+    return histories, results
+
+
+def visualize_results(histories: Dict, results: Dict, args):
+    """
+    Visualize training histories and test results.
+    """
+    plot_training_losses(histories, args.save_vis_path)
+    plot_test_accuracies(results, args.save_vis_path)
+
+    for model_name, test_result in results.items():
+        file_name = os.path.join(args.save_vis_path, f'dc{args.num_dc}_{model_name}_confusion_matrix.png')
+        conf_matrix = confusion_matrix(test_result['true_labels'], test_result['predictions'])
+        plot_confusion_matrix(conf_matrix, args.class_names, file_name)
+
+        print(f"\n{model_name} Test Accuracy: {test_result['test_accuracy']}")
+        print(f"\n{model_name} Classification Report:")
+        print(test_result['classification_report'])
+
+
+# TODO: train과 test의 class distribution 출력
 if __name__ == '__main__':
     print('[Start Execution]')
+
     # Configuration
     args = parse_arguments()
-    args.num_dc = 2  # TODO: choice [1, 2, 3, 4] depends on your dc choice
+    args.num_dc = 4  # TODO: choice [1, 2, 3, 4] depends on your dc choice
 
     if args.debug:
         args.device = torch.device("cpu")
@@ -251,7 +449,7 @@ if __name__ == '__main__':
     dc_loader = DataCollectionLoader(args)
     processor = StateDataProcessor(args)
     df = dc_loader.load_preprocess()
-    train_loader, test_loader, train_loader_prac, test_loader_prac = processor.create_data_loaders(df)
+    train_loader, val_loader, test_loader = processor.create_data_loaders(df)
     prepare_dc_argument()
 
     if args.debug:
@@ -279,40 +477,22 @@ if __name__ == '__main__':
         print('X_test.shape:', processor.X_test.shape)
         print('y_train.shape:', processor.y_train.shape)
         print('y_test.shape:', processor.y_test.shape)
-        print('X_train_prac.shape:', processor.X_train_prac.shape)
-        print('X_test_prac.shape:', processor.X_test_prac.shape)
 
-        print("\n[Practical Data Format]")
-        print('X_train_prac:\n', processor.X_train_prac)
+        print("\n[Data Format]")
+        print('X_train:\n', processor.X_train)
 
-    # =======================================================================================
-    # TODO: change the model you want
-    model = CNN_RNN(args.input_size, args.num_classes)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters())
-    # =======================================================================================
+    # Define models
+    model_classes = {
+        'CNN-RNN': CNN_RNN,
+        'CNN-LSTM': CNN_LSTM,
+        'DAE-RNN': DAE_RNN,
+        'DAE-LSTM': DAE_LSTM
+    }
 
-    if args.debug:
-        print("\n[Model Configuration]")
-        print(f'Model Structure:\n{model}')
-        print(f'Criterion:\n{criterion}')
-        print(f'Optimizer:\n{optimizer}')
-
-    # Training
-    print("\n[Training the model]")
-    trainer = ModelTrainer(model, criterion, optimizer, args)
-    history = trainer.train(train_loader_prac, test_loader_prac)
-
-    # Test
-    print("\n[Evaluating the model]")
-    test_results = trainer.test(test_loader_prac)
+    # Train and Test
+    print("\n[Train/Test the Model]")
+    histories, results = train_multiple_models(model_classes, train_loader, val_loader, test_loader, args)
 
     # Visualization
-    plot_training_history(history, args.save_vis_path)
-    conf_matrix = confusion_matrix(test_results['true_labels'], test_results['predictions'])
-    plot_confusion_matrix(conf_matrix, args.class_names, args.save_vis_path)
-
-    if args.debug:
-        print("\nTest Accuracy:", test_results['test_accuracy'])
-        print("\nClassification Report:")
-        print(test_results['classification_report'])
+    print("\n[Visualization: Loss comparison, accuracy comparison, confusion matrix]")
+    visualize_results(histories, results, args)

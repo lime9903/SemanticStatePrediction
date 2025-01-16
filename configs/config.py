@@ -49,12 +49,18 @@ def parse_arguments():
     parser.add_argument('-c', dest='num_classes', type=int, default=343,
                         help='Number of classes for deep learning model')
     parser.add_argument('-b', dest='batch_size', type=int, default=32, help='minibatch size')
-    parser.add_argument('-nepoch', dest='num_epochs', type=int, default=50, help='number of epochs')
+    parser.add_argument('-nepoch', dest='num_epochs', type=int, default=500, help='number of epochs')
     parser.add_argument('-lr', dest='learning_rate', type=float, default=1e-3, help='learning rate')
-    parser.add_argument('-p', dest='patience', type=int, default=10, help='early stopping patience')
-    parser.add_argument('-ts', dest='test_size', type=float, default=0.2, help='Size of test set')
-    parser.add_argument('-seq_len', dest='sequence_length', type=int, default=32, help='Length of sequence')
+    parser.add_argument('-p', dest='patience', type=int, default=15, help='early stopping patience')
+    parser.add_argument('-vs', dest='val_size', type=float, default=0.25, help='Size of validation set')
+    parser.add_argument('-ts', dest='test_size', type=float, default=0.15, help='Size of test set')
+    parser.add_argument('-seq_len', dest='sequence_length', type=int, default=8, help='Length of sequence')
     parser.add_argument('--class_names', default=[], type=arg_as_list, help='List of class names')
+    parser.add_argument('--model_name', type=str, choices=["CNN-RNN", "CNN-LSTM", "DAE-RNN", "DAE-LSTM"],
+                        help='Name of the deel learning model')
+
+    # channel
+    parser.add_argument('--snr_db', type=int, default=20, help='SNR db')
 
     # Check if running in Jupyter notebook
     try:

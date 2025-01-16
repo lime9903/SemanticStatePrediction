@@ -7,6 +7,7 @@ from pathlib import Path
 from itertools import product
 
 
+# TODO: split the data for time series
 class DataCollectionLoader:
     def __init__(self, args):
         assert args.num_dc in [1, 2, 3, 4], "num_dc must be 1, 2, 3 or 4."
@@ -214,10 +215,8 @@ class DataCollectionLoader:
         self.states = self.dc_states[self.num_dc - 1]
         self.state_ids = self.dc_state_ids[self.num_dc - 1]
 
-        # TODO: YURIM - add activity for each dc
         # Data collection #1 - activity time interval
-        # TODO
-        dc1_time_interval = []
+        dc1_time_interval = []  # TODO
 
         # Data collection #2 - activity time interval
         dc2_time_interval = [
@@ -238,8 +237,7 @@ class DataCollectionLoader:
         ]
 
         # Data collection #3 - activity time interval
-        # TODO
-        dc3_time_interval = []
+        dc3_time_interval = []  # TODO
 
         # Data collection #4 - activity time interval
         dc4_time_interval = [

@@ -77,6 +77,7 @@ class CNN_LSTM(nn.Module):
     def forward(self, x):
         if x.dim() == 2:
             x = x.unsqueeze(1)
+        x = x.permute(0, 2, 1)
         x = self.cnn(x)
         x = x.permute(0, 2, 1)
         _, (h_n1, _) = self.lstm1(x)
@@ -122,6 +123,7 @@ class DAE_RNN(nn.Module):
     def forward(self, x):
         if x.dim() == 2:
             x = x.unsqueeze(1)
+        x = x.permute(0, 2, 1)
         x = self.encoder(x)
         x = self.decoder(x)
         x = x.permute(0, 2, 1)
@@ -168,6 +170,7 @@ class DAE_LSTM(nn.Module):
     def forward(self, x):
         if x.dim() == 2:
             x = x.unsqueeze(1)
+        x = x.permute(0, 2, 1)
         x = self.encoder(x)
         x = self.decoder(x)
         x = x.permute(0, 2, 1)
@@ -177,19 +180,3 @@ class DAE_LSTM(nn.Module):
         x = h_n2[-1]
         x = self.fc(x)
         return x
-
-
-# Example usage
-# if __name__ == '__main__':
-#     input_size = 7     # 7 features
-#     num_classes = 343  # Total state number: (activity)^(user number)
-#     cnn_rnn_model = CNN_RNN(input_size=input_size, num_classes=num_classes)
-#     cnn_lstm_model = CNN_LSTM(input_size=input_size, num_classes=num_classes)
-#     dae_rnn_model = DAE_RNN(input_size=input_size, num_classes=num_classes)
-#     dae_lstm_model = DAE_LSTM(input_size=input_size, num_classes=num_classes)
-#
-#     # Print models to verify structure
-#     print(cnn_rnn_model)
-#     print(cnn_lstm_model)
-#     print(dae_rnn_model)
-#     print(dae_lstm_model)
