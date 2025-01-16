@@ -6,14 +6,15 @@ class WirelessChannel(ABC):
     """
     Abstract base class for wireless channel environments
     """
-    def __init__(self, channel_name, snr_db):
-        self.channel_name = channel_name
-        self.snr_db = snr_db
-        self.snr_linear = 10 ** (snr_db / 10)
+    def __init__(self, args):
+        self.channel_name = args.channel_name
+        self.snr_db = args.snr_db
+        self.snr_linear = 10 ** (args.snr_db / 10)
 
     @abstractmethod
     def apply_channel(self, signal):
-        pass
+        if not isinstance(signal, np.ndarray):
+            raise TypeError("Input signal must be a numpy array.")
 
     def get_snr(self, db=True):
         if db: return self.snr_db
@@ -42,9 +43,10 @@ class RayleighChannel(WirelessChannel):
     """
     Rayleigh fading channel with AWGN
     """
-    def __init__(self, channel_name, snr_db, doppler_freq=0):
-        super().__init__(channel_name, snr_db)
-        self.doppler_freq = doppler_freq
+    def __init__(self, args):
+        assert args.doppler_freq is not None, "RayleighChannel requires 'doppler_freq' parameter."
+        super().__init__(args)
+        self.doppler_freq = args.doppler_freq
 
     def apply_channel(self, signal):
         # Generate Rayleigh fading coefficients
@@ -61,13 +63,15 @@ class RicianChannel(WirelessChannel):
     """
     Rician fading channel with AWGN
     """
-    def __init__(self, channel_name, snr_db, k_factor):
-        super().__init__(channel_name, snr_db)
-        self.k_factor = k_factor
+    def __init__(self, args):
+        assert args.k_factor is not None
+        super().__init__(args)
+        self.k_factor = args.k_factor
+        self.variance = getattr(args, "variance", 1.0)
 
     def apply_channel(self, signal):
         k = self.k_factor
-        variance = 1
+        variance = self.variance
 
         # LOS (specular) component
         los = np.sqrt(k * variance / (k + 1))
@@ -88,20 +92,21 @@ class NakagamiChannel(WirelessChannel):
     """
     Nakagami fading channel with AWGN
     """
-    def __init__(self, channel_name, snr_db, m_factor):
-        super().__init__(channel_name, snr_db)
-        self.m_factor = m_factor
+    def __init__(self, args):
+        assert args.m_factor is not None
+        super().__init__(args)
+        self.m_factor = args.m_factor
+        self.omega = args.omega
 
     def apply_channel(self, signal):
         m = self.m_factor
-        omega = 1  # Average power
+        omega = self.omega  # Average power
 
-        amplitude = np.sqrt(np.random.gamma(m, omega/m, signal.shape))
-        phase = np.random.normal(0, 2*np.pi, signal.shape)
+        amplitude = np.sqrt(np.random.gamma(m, omega / m, signal.shape))
+        phase = np.random.uniform(0, 2 * np.pi, signal.shape)
         h = amplitude * np.exp(1j * phase)
 
         faded_signal = h * signal
         faded_signal = faded_signal * np.sqrt(len(signal) / np.sum(np.abs(h) ** 2))
 
         return self.add_noise(faded_signal)
-

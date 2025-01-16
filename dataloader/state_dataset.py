@@ -18,8 +18,12 @@ class StateDataProcessor:
             self.scaler = StandardScaler()
         else:
             self.scaler = MinMaxScaler()
+
+        self.features = ['Total Power (W)', 'Unix Time']  # Used features
+        self.label_column = 'state'  # Target
         self.categorical_cols = ['Label', 'Location Name', 'Appliance', 'state']
         self.numerical_cols = ['Power (W)', 'Energy (Wh)', 'Total Power (W)', 'Unix Time']
+        self.Label_encoder = LabelEncoder()
 
         self.X_train = None
         self.X_val = None
@@ -36,8 +40,6 @@ class StateDataProcessor:
         processed_df = df.copy()
 
         processed_df.drop(columns='Timestamp', inplace=True)
-
-        # Remove user activity columns if they exist
         activity_cols = [col for col in processed_df.columns if 'user' in col and 'activity' in col]
         if activity_cols:
             processed_df.drop(columns=activity_cols, inplace=True)
@@ -61,6 +63,32 @@ class StateDataProcessor:
 
         return processed_df
 
+    def create_sequences(self, features, labels=None, stride=1):
+        """
+        Create sequences with optional stride and balanced sampling
+        """
+        features = features if isinstance(features, np.ndarray) else features.to_numpy()
+        if labels is not None:
+            labels = labels if isinstance(labels, np.ndarray) else labels.to_numpy()
+
+        sequences = []
+        sequence_labels = []
+
+        valid_length = len(features) - self.args.sequence_length + 1
+
+        for i in range(0, valid_length, stride):
+            seq = features[i:i + self.args.sequence_length]
+            sequences.append(seq)
+            if labels is not None:
+                # Use the label from the last timestep of the sequence
+                sequence_labels.append(labels[i + self.args.sequence_length - 1])
+
+        sequences = np.array(sequences)
+        if labels is not None:
+            sequence_labels = np.array(sequence_labels)
+            return sequences, sequence_labels
+        return sequences
+
     def prepare_train_test_data(self, processed_df):
         """
         Prepare training and test datasets.
@@ -74,14 +102,13 @@ class StateDataProcessor:
         val_size = round(len(X) * self.args.val_size)
 
         X_train = X[:train_size]
-        X_temp = X[train_size:]
         y_train = y[:train_size]
-        y_temp = y[train_size:]
 
-        X_val = X_temp[:val_size]
-        X_test = X_temp[val_size:]
-        y_val = y_temp[:val_size]
-        y_test = y_temp[val_size:]
+        X_val = X[train_size:train_size + val_size]
+        y_val = y[train_size:train_size + val_size]
+
+        X_test = X[train_size + val_size:]
+        y_test = y[train_size + val_size:]
 
         if self.args.aggregate:
             # for aggregated dataset
@@ -90,21 +117,15 @@ class StateDataProcessor:
             X_val = X_practical[train_size:train_size + val_size]
             X_test = X_practical[train_size + val_size:]
 
-        self.X_train = X_train
-        self.X_val = X_val
-        self.X_test = X_test
-        self.y_train = y_train
-        self.y_val = y_val
-        self.y_test = y_test
+        X_train_seq, y_train_seq = self.create_sequences(X_train, y_train, stride=self.args.stride)
+        X_val_seq, y_val_seq = self.create_sequences(X_val, y_val, stride=self.args.stride)
+        X_test_seq, y_test_seq = self.create_sequences(X_test, y_test, stride=self.args.stride)
+
+        self.X_train, self.y_train = X_train_seq, y_train_seq
+        self.X_val, self.y_val = X_val_seq, y_val_seq
+        self.X_test, self.y_test = X_test_seq, y_test_seq
 
         return self.X_train, self.X_val, self.X_test, self.y_train, self.y_val, self.y_test
-
-    def create_sequences(self, data):
-        sequences = []
-        for i in range(len(data) - self.args.sequence_length + 1):
-            seq = data[i:i + self.args.sequence_length]
-            sequences.append(seq)
-        return np.array(sequences)
 
     def create_data_loaders(self, df):
         """
@@ -112,24 +133,35 @@ class StateDataProcessor:
         """
         processed_df = self.preprocess_data(df, is_train=True)
         X_train, X_val, X_test, y_train, y_val, y_test = self.prepare_train_test_data(processed_df)
-        X_train_seq = self.create_sequences(X_train)
-        X_val_seq = self.create_sequences(X_val)
-        X_test_seq = self.create_sequences(X_test)
 
-        X_train_tensor = torch.tensor(X_train_seq, dtype=torch.float32)
-        X_val_tensor = torch.tensor(X_val_seq, dtype=torch.float32)
-        X_test_tensor = torch.tensor(X_test_seq, dtype=torch.float32)
-        y_train_tensor = torch.tensor(y_train.values, dtype=torch.long)
-        y_val_tensor = torch.tensor(y_val.values, dtype=torch.long)
-        y_test_tensor = torch.tensor(y_test.values, dtype=torch.long)
+        train_dataset = StateDataset(
+            torch.FloatTensor(X_train),
+            torch.LongTensor(y_train)
+        )
+        val_dataset = StateDataset(
+            torch.FloatTensor(X_val),
+            torch.LongTensor(y_val)
+        )
+        test_dataset = StateDataset(
+            torch.FloatTensor(X_test),
+            torch.LongTensor(y_test)
+        )
 
-        train_dataset = StateDataset(X_train_tensor, y_train_tensor)
-        val_dataset = StateDataset(X_val_tensor, y_val_tensor)
-        test_dataset = StateDataset(X_test_tensor, y_test_tensor)
-
-        train_loader = DataLoader(train_dataset, batch_size=self.args.batch_size, shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=self.args.batch_size, shuffle=False)
-        test_loader = DataLoader(test_dataset, batch_size=self.args.batch_size, shuffle=False)
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=self.args.batch_size,
+            shuffle=True
+        )
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=self.args.batch_size,
+            shuffle=False
+        )
+        test_loader = DataLoader(
+            test_dataset,
+            batch_size=self.args.batch_size,
+            shuffle=False
+        )
 
         return train_loader, val_loader, test_loader
 

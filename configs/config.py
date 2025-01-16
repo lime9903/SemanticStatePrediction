@@ -1,6 +1,3 @@
-"""
-Configuration file for main
-"""
 import os
 import ast
 import argparse
@@ -49,18 +46,26 @@ def parse_arguments():
     parser.add_argument('-c', dest='num_classes', type=int, default=343,
                         help='Number of classes for deep learning model')
     parser.add_argument('-b', dest='batch_size', type=int, default=32, help='minibatch size')
+    parser.add_argument('-st', dest='stride', type=int, default=1, help='length of stride')
     parser.add_argument('-nepoch', dest='num_epochs', type=int, default=500, help='number of epochs')
     parser.add_argument('-lr', dest='learning_rate', type=float, default=1e-3, help='learning rate')
     parser.add_argument('-p', dest='patience', type=int, default=15, help='early stopping patience')
-    parser.add_argument('-vs', dest='val_size', type=float, default=0.25, help='Size of validation set')
-    parser.add_argument('-ts', dest='test_size', type=float, default=0.15, help='Size of test set')
-    parser.add_argument('-seq_len', dest='sequence_length', type=int, default=8, help='Length of sequence')
+    parser.add_argument('-vs', dest='val_size', type=float, default=0.1, help='Size of validation set')
+    parser.add_argument('-ts', dest='test_size', type=float, default=0.2, help='Size of test set')
+    parser.add_argument('-seq_len', dest='sequence_length', type=int, default=50, help='Length of sequence')
     parser.add_argument('--class_names', default=[], type=arg_as_list, help='List of class names')
     parser.add_argument('--model_name', type=str, choices=["CNN-RNN", "CNN-LSTM", "DAE-RNN", "DAE-LSTM"],
                         help='Name of the deel learning model')
 
     # channel
     parser.add_argument('--snr_db', type=int, default=20, help='SNR db')
+    parser.add_argument('--channel_name', type=str, default="AWGN",
+                        choices=["AWGN", "Rayleigh", "Rician", "Nakagami"], help='Channel environment types')
+    parser.add_argument('--doppler_freq', type=float, default=0, help='Doppler frequency')
+    parser.add_argument('--k_factor', type=float, default=1.0, help='K factor of Rician channel')
+    parser.add_argument('--variance', type=float, default=1.0, help='Variance of Rician channel')
+    parser.add_argument('--m_factor', type=float, default=1.0, help='M factor of Nakagami channel')
+    parser.add_argument('--omega', type=float, default=1.0, help='Average power(omega) of Nakagami channel')
 
     # Check if running in Jupyter notebook
     try:

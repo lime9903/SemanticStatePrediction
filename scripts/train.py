@@ -25,7 +25,7 @@ rcParams['font.sans-serif'] = ['Arial']
 rcParams['figure.facecolor'] = 'white'
 
 
-def prepare_dc_argument():
+def prepare_dc_argument(df, dc_loader, args):
     assert args.num_dc in [1, 2, 3, 4]
 
     # check input size
@@ -450,7 +450,7 @@ if __name__ == '__main__':
     processor = StateDataProcessor(args)
     df = dc_loader.load_preprocess()
     train_loader, val_loader, test_loader = processor.create_data_loaders(df)
-    prepare_dc_argument()
+    prepare_dc_argument(df, dc_loader, args)
 
     if args.debug:
         print("\n[Arguments Configuration]")
