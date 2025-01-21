@@ -1,39 +1,66 @@
+"""
+Data loader module for loading and processing NILM(Non-Intrusive Load Monitoring) data collections.
+"""
+from typing import List, Dict, Tuple, Optional
 import os
-import pandas as pd
 from datetime import time
+from pathlib import Path
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
 from itertools import product
 
+from config import args
 
-# TODO: split the data for time series
+
 class DataCollectionLoader:
+    """Load and process data collections from power monitoring devices."""
+
     def __init__(self, args):
-        assert args.num_dc in [1, 2, 3, 4], "num_dc must be 1, 2, 3 or 4."
-        assert Path(args.data_dir_path).exists(), "data_dir_path does not exist."
+        """Initialize data collection loader with configuration."""
+        self._validate_args(args)
         self.args = args
         self.num_dc = args.num_dc
-        self.data_dir_path = args.data_dir_path
-        self.dc_appliances_mapping = []  # total dc appliances mapping
-        self.dc_activities_mapping = []  # total dc activities mapping
-        self.appliances_mapping = None   # specified appliances mapping
-        self.activities_mapping = None   # specified activities mapping
-        self.dc_actions = []             # total dc actions
-        self.actions = None              # specified dc actions
-        self.dc_users = None             # total dc users
-        self.dc_num_users = []           # total dc number of users
-        self.users = None                # specified users
-        self.num_users = None            # specified number of users
-        self.dc_states = []              # total dc states
-        self.dc_state_ids = []           # total dc state indices
-        self.states = None               # specified states
-        self.state_ids = None            # specified state indices
-        self.dc_time_interval = []       # total dc time intervals
-        self.time_interval = None        # specified time interval
+
+        # Initialize mappings and state information
+        self.dc_appliances_mapping: List[Dict[str, str]] = []
+        self.dc_activities_mapping: List[Dict[str, str]] = []
+        self.appliances_mapping: Optional[Dict[str, str]] = None
+        self.activities_mapping: Optional[Dict[str, str]] = None
+        self.dc_actions: List[List[str]] = []
+        self.actions: Optional[List[str]] = None
+        self.dc_users: Optional[List[List[str]]] = None
+        self.dc_num_users: List[int] = []
+        self.users: Optional[List[str]] = None
+        self.num_users: Optional[int] = None
+        self.dc_states: List[List[Tuple]] = []
+        self.dc_state_ids: List[Dict[Tuple, str]] = []
+        self.states: Optional[List[Tuple]] = None
+        self.state_ids: Optional[Dict[Tuple, str]] = None
+        self.dc_time_interval: List[List[Tuple]] = []
+        self.time_interval: Optional[List[Tuple]] = None
+
         self._initialize_parameters()
 
-    def _initialize_parameters(self):
+    @staticmethod
+    def _validate_args(args) -> None:
+        """Validate initialization arguments."""
+        if not hasattr(args, 'num_dc') or args.num_dc not in [1, 2, 3, 4]:
+            raise ValueError("num_dc must be 1, 2, 3 or 4.")
+        if not Path(args.data_dir_path).exists():
+            print(args.data_dir_path)
+            raise ValueError("data_dir_path does not exist.")
+
+    def _initialize_parameters(self) -> None:
+        """Initialize all data collection parameters and mappings."""
+        self._init_appliances_mapping()
+        self._init_activities_mapping()
+        self._init_users()
+        self._init_states()
+        self._init_time_intervals()
+
+    def _init_appliances_mapping(self) -> None:
+        """Initialize appliance mappings for each data collection."""
         # Data collection #1 - appliances
         dc1_appliances_mapping = {
             "SMP01": "Refrigerator(207)",
@@ -148,6 +175,8 @@ class DataCollectionLoader:
         ])
         self.appliances_mapping = self.dc_appliances_mapping[self.num_dc - 1]
 
+    def _init_activities_mapping(self) -> None:
+        """Initialize activity mappings for each data collection."""
         # Data collection #1 - activity
         dc1_activities_mapping = {
             "abs": "Absence",
@@ -194,20 +223,21 @@ class DataCollectionLoader:
             self.dc_actions.append(list(activity.keys()))
         self.actions = self.dc_actions[self.num_dc - 1]
 
-        # Participate users for each dc
+    def _init_users(self) -> None:
+        """Initialize user information for each data collection."""
         self.dc_users = [
-            ['JI', 'HW', 'YR'],
-            ['JI', 'HW', 'YR'],
-            ['JI', 'YR'],
-            ['JI', 'HW']
+            ['JI', 'HW', 'YR'],   # Data collection #1 - users
+            ['JI', 'HW', 'YR'],   # Data collection #2 - users
+            ['JI', 'YR'],         # Data collection #3 - users
+            ['JI', 'HW']          # Data collection #4 - users
         ]
-        for user in self.dc_users:
-            self.dc_num_users.append(len(user))
+        self.dc_num_users = [len(users) for users in self.dc_users]
         self.users = self.dc_users[self.num_dc - 1]
         self.num_users = self.dc_num_users[self.num_dc - 1]
 
-        # TODO: need to adjust for dc4 states (assume: limited states)
-        for idx, actions in enumerate(self.dc_actions):
+    def _init_states(self) -> None:
+        """Initialize state information for each data collection."""
+        for idx, actions in enumerate(self.dc_actions):  # TODO: need to adjust for dc4 states (assume: limited states)
             states = list(product(actions, repeat=len(self.dc_users[idx])))
             state_ids = {state: f"S{index}" for index, state in enumerate(states)}
             self.dc_states.append(states)
@@ -215,6 +245,8 @@ class DataCollectionLoader:
         self.states = self.dc_states[self.num_dc - 1]
         self.state_ids = self.dc_state_ids[self.num_dc - 1]
 
+    def _init_time_intervals(self) -> None:
+        """Initialize time intervals for each data collection."""
         # Data collection #1 - activity time interval
         dc1_time_interval = []  # TODO
 
@@ -266,8 +298,12 @@ class DataCollectionLoader:
         ])
         self.time_interval = self.dc_time_interval[self.num_dc - 1]
 
-    def dc1_load(self, data_dir, power_files, energy_files):
-        assert len(power_files) == len(energy_files), "There should be the same number of power and energy files."
+    def dc1_load(self, data_dir: str, power_files: List[str],
+                 energy_files: List[str]) -> List[pd.DataFrame]:
+        """Load and process data for data collection #1."""
+        assert len(power_files) == len(energy_files), \
+            "There should be the same number of power and energy files."
+
         num_appliances = len(power_files)
         dfs = []
 
@@ -278,14 +314,17 @@ class DataCollectionLoader:
             energy_file_path = os.path.join(data_dir, energy_file)
             device_id = power_file.split('_')[0]
 
+            # Read power and energy data
             power_df = pd.read_csv(str(power_file_path))
             energy_df = pd.read_csv(str(energy_file_path))
 
+            # Process timestamps and rename columns
             power_df['Timestamp'] = pd.to_datetime(power_df['Time'])
             energy_df['Timestamp'] = pd.to_datetime(energy_df['Time'])
             power_df.rename(columns={'Value': 'Power (W)'}, inplace=True)
             energy_df.rename(columns={'Value': 'Energy (Wh)'}, inplace=True)
 
+            # Merge power and energy data
             df = pd.merge_asof(
                 power_df.sort_values('Timestamp'),
                 energy_df.sort_values('Timestamp'),
@@ -293,6 +332,7 @@ class DataCollectionLoader:
                 direction='nearest'
             )
 
+            # Create final DataFrame with selected columns
             final_df = pd.DataFrame()
             final_df['Timestamp'] = df['Timestamp']
             final_df['Label'] = df['Device Label_x']
@@ -305,8 +345,8 @@ class DataCollectionLoader:
 
         return dfs
 
-    def load_data(self):
-        # TODO: change the path for your relative data directory path
+    def load_data(self) -> pd.DataFrame:
+        """Load data based on the data collection number."""
         dc_data_dirs = [
             '20241122',  # dc 1
             '20241128',  # dc 2
@@ -315,7 +355,7 @@ class DataCollectionLoader:
         ]
 
         data_dir = dc_data_dirs[self.num_dc - 1]
-        data_path = os.path.join(self.data_dir_path, data_dir)
+        data_path = os.path.join(self.args.data_dir_path, data_dir)
         files = [file for file in os.listdir(data_path) if file.endswith('.csv')]
         dfs = []
 
@@ -336,18 +376,104 @@ class DataCollectionLoader:
 
         return combined_df
 
-    def plot_power_consumption(self, save_vis_path):
+    def load_preprocess(self) -> pd.DataFrame:
+        """Load and preprocess data including state assignments."""
         df = self.load_data()
-        sns.set(style="whitegrid")
+
+        # Initialize user activity columns
+        for i in range(self.num_users):
+            df[f'user{i + 1}_activity'] = None
+
+        if not self.time_interval:
+            print("No time interval definitions available.")
+            return df
+
+        # Assign states based on time intervals
+        df['Time'] = df['Timestamp'].dt.time
+        for start_time, end_time, states in self.time_interval:
+            mask = self._create_time_mask(df, start_time, end_time)
+            self._assign_states(df, mask, states)
+
+        # Calculate total power and add Unix timestamp
+        power_cols = [col for col in df.columns if 'Power (W)' in col]
+        if power_cols:
+            df['Total Power (W)'] = df[power_cols].sum(axis=1)
+        df['Unix Time'] = (pd.to_datetime(df['Timestamp']).astype('int64') // 10 ** 9)
+
+        # Clean up and finalize
+        df.drop(columns=['Time'], inplace=True)
+        df['state'] = df.apply(self.get_current_state, axis=1)
+
+        if self.args.make_equal_dist:
+            df = df[df['state'] != 'Unknown']
+
+        self._save_processed_data(df)
+        return df
+
+    def get_state_id(self, activities: Tuple[str, ...]) -> str:
+        """Get the state ID for a given combination of activities."""
+        return self.state_ids.get(activities, "Unknown")
+
+    def get_current_state(self, row: pd.Series) -> str:
+        """Get the current state ID based on all users' activities."""
+        activities = []
+        for i in range(self.num_users):
+            activity = row[f'user{i + 1}_activity']
+            activities.append(activity)
+        return self.get_state_id(tuple(activities))
+
+    def _create_time_mask(self, df: pd.DataFrame, start_time: time, end_time: time) -> pd.Series:
+        """Create a boolean mask for time interval selection."""
+        if start_time is None:
+            return df['Time'] < end_time
+        elif end_time is None:
+            return df['Time'] >= start_time
+        return df['Time'].between(start_time, end_time)
+
+    def _assign_states(self, df: pd.DataFrame, mask: pd.Series, states: Tuple[str, ...]) -> None:
+        """Assign states to the dataframe based on the mask."""
+        for user_idx, state in enumerate(states):
+            if user_idx < self.num_users:
+                df.loc[mask, f'user{user_idx + 1}_activity'] = state
+
+    def _save_processed_data(self, df: pd.DataFrame) -> None:
+        """Save processed data to CSV file."""
+        if self.args.save_data_path:
+            save_dir = Path(self.args.save_data_path)
+            save_dir.mkdir(parents=True, exist_ok=True)
+
+            date_str = df['Timestamp'].min().strftime('%Y%m%d')
+            filename = f"dc{self.num_dc}_processed_data_{date_str}.csv"
+            file_path = save_dir / filename
+
+            df.to_csv(file_path, index=False)
+            print(f"Data saved to: {file_path}")
+
+    def plot_power_consumption(self, save_vis_path: Optional[str] = None) -> None:
+        """Plot power consumption visualizations."""
+        save_path = save_vis_path or self.args.save_vis_path
+        df = self.load_data()
+        self._plot_combined_power_usage(df, save_path)
+        self._plot_individual_power_usage(df, save_path)
+
+    def plot_state_distribution(self, save_vis_path: Optional[str] = None) -> None:
+        """Plot state distribution visualizations."""
+        save_path = save_vis_path or self.args.save_vis_path
+        df = self.load_preprocess()
+        self._plot_state_distribution(df, save_path)
+
+    def _plot_combined_power_usage(self, df: pd.DataFrame, save_path: str) -> None:
+        """Plot combined power usage for all devices."""
+        plt.figure(figsize=(15, 8))
         unique_labels = df['Label'].unique()
         palette = sns.color_palette("husl", len(unique_labels))
-        plt.figure(figsize=(15, 8))
 
         for i, label in enumerate(unique_labels):
             label_df = df[df['Label'] == label]
-            plt.plot(label_df['Timestamp'], label_df['Power (W)'], label=f'{label} Power', color=palette[i],
-                     alpha=0.7)
-            plt.fill_between(label_df['Timestamp'], label_df['Power (W)'], color=palette[i], alpha=0.2)
+            plt.plot(label_df['Timestamp'], label_df['Power (W)'],
+                     label=f'{label} Power', color=palette[i], alpha=0.7)
+            plt.fill_between(label_df['Timestamp'], label_df['Power (W)'],
+                             color=palette[i], alpha=0.2)
 
         plt.xlabel('Timestamp')
         plt.ylabel('Power (W)')
@@ -355,138 +481,37 @@ class DataCollectionLoader:
         plt.legend()
         plt.grid(alpha=0.3)
 
-        combined_output_file = os.path.join(save_vis_path, f"dc{self.num_dc}_combined_power_usage.png")
-        plt.savefig(combined_output_file, dpi=300)
-        plt.show()
-        print(f"Saved combined graph: {combined_output_file}")
+        output_file = os.path.join(save_path, f"dc{self.num_dc}_combined_power_usage.png")
+        plt.savefig(output_file, dpi=300)
+        plt.close()
+        print(f"Saved combined graph: {output_file}")
 
-        n_cols = 5
-        n_rows = -(-len(unique_labels) // n_cols)
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 4 * n_rows))
-        axes = axes.flatten()
-
-        for i, label in enumerate(unique_labels):
-            label_df = df[df['Label'] == label]
-            ax = axes[i]
-            ax.plot(label_df['Timestamp'], label_df['Power (W)'], label='Power (W)', color=palette[i], alpha=0.7)
-            ax.fill_between(label_df['Timestamp'], label_df['Power (W)'], color=palette[i], alpha=0.2)
-            ax.set_xlabel('Timestamp')
-            ax.set_ylabel('Power (W)')
-            ax.set_title(f'Power Usage - {label}')
-            ax.legend()
-            ax.grid(alpha=0.3)
-
-        for j in range(len(unique_labels), len(axes)):
-            fig.delaxes(axes[j])
-
-        plt.tight_layout()
-        plt.show()
-
-        for i, label in enumerate(unique_labels):
+    def _plot_individual_power_usage(self, df: pd.DataFrame, save_path: str) -> None:
+        """Plot individual power usage for each device."""
+        for label in df['Label'].unique():
             plt.figure(figsize=(12, 6))
             label_df = df[df['Label'] == label]
-            plt.plot(label_df['Timestamp'], label_df['Power (W)'], label='Power (W)', color=palette[i], alpha=0.7)
-            plt.fill_between(label_df['Timestamp'], label_df['Power (W)'], color=palette[i], alpha=0.2)
+            plt.plot(label_df['Timestamp'], label_df['Power (W)'],
+                     label='Power (W)', alpha=0.7)
+            plt.fill_between(label_df['Timestamp'], label_df['Power (W)'], alpha=0.2)
+
             plt.xlabel('Timestamp')
             plt.ylabel('Power (W)')
             plt.title(f'Power Usage Over Time - {label}')
             plt.legend()
             plt.grid(alpha=0.3)
 
-            individual_output_file = os.path.join(save_vis_path, f"dc{self.num_dc}_{label}_xtime_ypower.png")
-            plt.savefig(individual_output_file, dpi=300)
+            output_file = os.path.join(save_path, f"dc{self.num_dc}_{label}_power_usage.png")
+            plt.savefig(output_file, dpi=300)
             plt.close()
-            print(f"Saved graph: {individual_output_file}")
+            print(f"Saved individual graph: {output_file}")
 
-    def load_preprocess(self):
-        """
-        Assign states to the DataFrame based on the given time intervals and corresponding states.
-        Also calculates total power consumption and adds Unix timestamp.
-        """
-        df = self.load_data()
-
-        for i in range(self.num_users):
-            df[f'user{i + 1}_activity'] = None
-
-        # If time interval is empty, end assigning states
-        if not self.time_interval:
-            print("There is no definition of the time interval.")
-            return df
-
-        df['Time'] = df['Timestamp'].dt.time
-        for start_time, end_time, states in self.time_interval:
-            if start_time is None:
-                mask = df['Time'] < end_time
-            elif end_time is None:
-                mask = df['Time'] >= start_time
-            else:
-                mask = df['Time'].between(start_time, end_time)
-
-            for user_idx, state in enumerate(states):
-                if user_idx < self.num_users:
-                    df.loc[mask, f'user{user_idx + 1}_activity'] = state
-
-        power_cols = [col for col in df.columns if 'Power (W)' in col]
-        if power_cols:
-            df['Total Power (W)'] = df[power_cols].sum(axis=1)
-
-        df['Unix Time'] = (pd.to_datetime(df['Timestamp']).astype('int64') // 10 ** 9)
-
-        df.drop(columns=['Time'], inplace=True)
-        df['state'] = df.apply(self.get_current_state, axis=1)
-
-        if self.args.make_equal_dist:
-            df = df[df['state'] != 'Unknown']
-
-        self.save_to_csv(df, save_data_path=self.args.save_data_path)
-
-        return df
-
-    def get_state_id(self, activities):
-        """
-        Get the state ID for a given combination of activities.
-        """
-        activity_tuple = tuple(activities)
-        return self.state_ids.get(activity_tuple, "Unknown")
-
-    def get_current_state(self, row):
-        """
-        Get the current state ID based on all users' activities.
-        """
-        activities = []
-        for i in range(self.num_users):
-            activity = row[f'user{i + 1}_activity']
-            activities.append(activity)
-
-        return self.get_state_id(activities)
-
-    def save_to_csv(self, df, save_data_path=None):
-        """
-        Save the processed DataFrame to a CSV file.
-        """
-        if save_data_path:
-            save_dir = Path(save_data_path)
-        else:
-            save_dir = Path.cwd()
-
-        save_dir.mkdir(parents=True, exist_ok=True)
-        date_str = df['Timestamp'].min().strftime('%Y%m%d')
-        filename = f"dc{self.num_dc}_processed_data_{date_str}.csv"
-        file_path = save_dir / filename
-
-        df.to_csv(file_path, index=False)
-        print(f"Data saved to: {file_path}")
-
-        return str(file_path)
-
-    def plot_state_distribution(self, state_df):
-        """
-        Plot the distribution of states in a pie chart.
-        """
+    def _plot_state_distribution(self, df: pd.DataFrame, save_path: str) -> None:
+        """Plot the distribution of states in a pie chart."""
         sns.set_theme(style="whitegrid")
+        state_counts = df['state'].value_counts()
 
-        state_counts = state_df['state'].value_counts()
-
+        # Create pie chart
         fig, ax = plt.subplots(figsize=(15, 10))
         colors = sns.color_palette("husl", n_colors=len(state_counts))
 
@@ -500,12 +525,14 @@ class DataCollectionLoader:
             startangle=90
         )
 
+        # Format autopct labels
         for i, autotext in enumerate(autotexts):
             count = state_counts.iloc[i]
             autotext.set_text(f'{count:,d}\n({autotext.get_text()})')
 
         plt.title(f'DC{self.num_dc} State Distribution', pad=20, size=16)
 
+        # Create legend with state descriptions
         id_to_state = {v: k for k, v in self.state_ids.items()}
         legend_labels = []
         for state_id in state_counts.index:
@@ -527,6 +554,8 @@ class DataCollectionLoader:
         )
 
         plt.tight_layout()
-        plt.show()
+        output_file = os.path.join(save_path, f"dc{self.num_dc}_state_distribution.png")
+        plt.savefig(output_file, dpi=300)
+        plt.close()
+        print(f"Saved state distribution pie chart: {output_file}")
 
-        return
