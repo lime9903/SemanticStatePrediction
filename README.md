@@ -3,11 +3,143 @@ Semantic state prediction with power consumption data collected by smart plugs.
 
 
 ## 🖥️ Code:: Usage
+
 `pip install -r requirements.txt`
+
+(TBU)
+
+### Directory Structure
+The overall structure of the project is as follows:
+
+```
+semanticProject/
+    ├── channel/
+    ├── data/
+    ├── dataloader/
+    ├── docs/
+    ├── models/
+    ├── outputs/
+    ├── scripts/
+    ├── trainer/
+    ├── utils/
+    ├── config.py
+    ├── README.md
+    └── requirements.txt
+```
+
+- **It is recommended not to modify the directory structure.**
+- If you wish to make changes, please ensure to update the paths in the `config.py` file:
+  - `self.root_path`
+  - `self.save_path`
+
+### Configuration
+
+The `config.py` file allows you to customize various aspects of the project through command-line arguments. Below is a categorized summary of the arguments you can use:
+
+**Environment Arguments**
+- `--debug`  
+  Enable debug mode. *(default: True)*
+  
+- `--device`  
+  Device to be used for training (e.g., CPU, GPU). *(default: 'cuda')*
+
+- `-rand`, `--random_state`  
+  Random state for reproducibility. *(default: 42)*
+
+- `--data_dir_path`  
+  Path to the data directory. *(default: `<root_path>/data`)*
+
+- `--save_data_path`  
+  Path to save output datasets. *(default: `<save_path>/dataset`)*
+
+- `--save_vis_path`  
+  Path to save visualizations. *(default: `<save_path>/visualization`)*
+
+- `--save_model_path`  
+  Path to save model checkpoints. *(default: `<save_path>/checkpoints`)*
+
+**Data Arguments**
+- `-dc`, `--num_dc`  
+  Number of data collections. *(choices: [1, 2, 3, 4, 5], default: 4)*
+
+- `-s`, `--scaler_type`  
+  Type of data scaler. *(choices: ["standard", "minmax"], default: "standard")*
+
+- `-eq`, `--make_equal_dist`  
+  Ensure equal data distribution. *(default: True)*
+
+- `-agg`, `--aggregate`  
+  Use aggregated dataset. *(default: True)*
+
+**Model Arguments**
+- `-i`, `--input_size`  
+  Input size for the model. *(choices: [2, 7], default: 2)*
+
+- `-c`, `--num_classes`  
+  Number of output classes for the model. *(default: 343)*
+
+- `-b`, `--batch_size`  
+  Mini-batch size for training. *(default: 32)*
+
+- `-st`, `--stride`  
+  Stride length for data. *(default: 1)*
+
+- `-nepoch`, `--num_epochs`  
+  Number of training epochs. *(default: 500)*
+
+- `-lr`, `--learning_rate`  
+  Learning rate for the optimizer. *(default: 0.001)*
+
+- `-p`, `--patience`  
+  Early stopping patience. *(default: 15)*
+
+- `-vs`, `--val_size`  
+  Validation set size as a fraction of the dataset. *(default: 0.1)*
+
+- `-ts`, `--test_size`  
+  Test set size as a fraction of the dataset. *(default: 0.2)*
+
+- `-seq_len`, `--sequence_length`  
+  Sequence length for training. *(default: 50)*
+
+- `--class_names`  
+  List of class names. *(default: `[]`)*
+
+- `--model_name`  
+  Name of the deep learning model. *(choices: ["CNN-RNN", "CNN-LSTM", "DAE-RNN", "DAE-LSTM"])*
+
+**Embedding Arguments**
+- `--embedding_dim`  
+  Embedding dimension for semantic embeddings. *(default: 50)*
+
+**Channel Arguments**
+- `--snr_db`  
+  Signal-to-noise ratio (SNR) in dB. *(default: 20)*
+
+- `--channel_name`  
+  Channel environment type. *(choices: ["AWGN", "Rayleigh", "Rician", "Nakagami"], default: "AWGN")*
+
+- `--doppler_freq`  
+  Doppler frequency. *(default: 0)*
+
+- `--k_factor`  
+  K-factor of the Rician channel. *(default: 1.0)*
+
+- `--variance`  
+  Variance of the Rician channel. *(default: 1.0)*
+
+- `--m_factor`  
+  M-factor of the Nakagami channel. *(default: 1.0)*
+
+- `--omega`  
+  Average power (omega) of the Nakagami channel. *(default: 1.0)*
+
+
+Make sure to use these arguments as needed when running scripts to configure the project behavior.
 
 
 ## 🖥️ Code:: Explanation
-TBU
+(TBU)
 
 
 ## 🗃️ Data Collection:: 2nd Test Data Acquisition
@@ -125,3 +257,7 @@ TBU
 
 ### Data Visualization
 ![Combined Power Usage](outputs%2Fvisualization%2Fdc4_combined_power_usage.png)
+
+
+## 🗃️ Data Collection:: 5th Test Data Acquisition
+

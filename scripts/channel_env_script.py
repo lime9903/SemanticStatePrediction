@@ -8,11 +8,11 @@ from typing import Dict, List
 from matplotlib import rcParams
 
 from channel.wireless_channel import AWGNChannel, RayleighChannel, RicianChannel, NakagamiChannel
-from dataloader.preprocess_dataset import DataCollectionLoader
-from dataloader.state_dataset import StateDataProcessor
-from models.hybrid import CNN_RNN, DAE_LSTM
-from configs.config import parse_arguments
-from scripts.train import prepare_dc_argument
+from dataloader.data_loader import DataCollectionLoader
+from dataloader.data_processor import StateDataProcessor
+from models.networks import DAE_LSTM  # TODO: get_model 변경
+from config import args
+from scripts.state_predict_script import prepare_dc_argument
 
 
 # TODO: definition of channel is wired !!REVISE
@@ -188,7 +188,6 @@ if __name__ == "__main__":
     print('[Start Execution]')
 
     # Configuration
-    args = parse_arguments()
     args.num_dc = 4  # TODO: enter the DC number to use - [1, 2, 3, 4]
     args.input_size = 2
     args.num_classes = 16
