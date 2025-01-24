@@ -78,7 +78,7 @@ def print_debug_info(args, dc_loader, processor):
 def main():
     """Main execution function."""
     print('[Start Execution]')
-    args.num_dc = 2   # Enter your DC number
+    args.num_dc = 4   # Enter your DC number
 
     # Setup device
     args.device = setup_device(args)
