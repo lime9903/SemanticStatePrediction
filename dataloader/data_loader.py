@@ -45,8 +45,10 @@ class DataCollectionLoader:
     @staticmethod
     def _validate_args(args) -> None:
         """Validate initialization arguments."""
+
         if not hasattr(args, 'num_dc') or args.num_dc not in [1, 2, 3, 4, 5]:
             raise ValueError("num_dc must be 1, 2, 3, 4 or 5.")
+
         if not Path(args.data_dir_path).exists():
             print(args.data_dir_path)
             raise ValueError("data_dir_path does not exist.")
@@ -58,6 +60,7 @@ class DataCollectionLoader:
         self._init_users()
         self._init_time_intervals()
         self._init_states()
+        self._init_time_intervals()
 
     def _init_appliances_mapping(self) -> None:
         """Initialize appliance mappings for each data collection."""
