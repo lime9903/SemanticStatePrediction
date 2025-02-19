@@ -102,6 +102,13 @@ class Config:
             help='Number of data collection'
         )
         data_group.add_argument(
+            '--num_test',
+            type=int,
+            choices=[1],
+            default=1,
+            help='Number of test data collection'
+        )
+        data_group.add_argument(
             '-s', '--scaler_type',
             type=str,
             choices=["standard", "minmax"],
@@ -191,9 +198,8 @@ class Config:
         )
         model_group.add_argument(
             '-seq_len',
-            dest='sequence_length',
             type=int,
-            default=50,
+            default=5,
             help='Length of sequence'
         )
         model_group.add_argument(

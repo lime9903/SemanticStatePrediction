@@ -3,10 +3,11 @@ Main script for trainer and evaluating models.
 """
 import torch
 from pathlib import Path
+
 from config import args
 from dataloader.data_loader import DataCollectionLoader
 from dataloader.data_processor import StateDataProcessor
-from models.networks import CNN_RNN, CNN_LSTM, DAE_RNN, DAE_LSTM, AttentionModel
+from models.networks import *
 from trainer.state_predict_trainer import train_multiple_models
 from utils.visualization import visualize_results, plot_state_distribution_pie
 
@@ -78,7 +79,9 @@ def print_debug_info(args, dc_loader, processor):
 def main():
     """Main execution function."""
     print('[Start Execution]')
-    args.num_dc = 4   # Enter your DC number
+    args.num_dc = 5   # Enter your DC number
+    args.seq_len = 15
+    args.num_epochs = 500
 
     # Setup device
     args.device = setup_device(args)
@@ -93,25 +96,21 @@ def main():
     df = dc_loader.load_preprocess()
     train_loader, val_loader, test_loader = processor.create_data_loaders(df)
     prepare_dc_argument(df, dc_loader, args)
-    plot_state_distribution_pie(processor, args)  # check if is the equal distribution
 
     # Print debug information if needed
     if args.debug:
         print_debug_info(args, dc_loader, processor)
 
     # Define models to train
-    model_classes = {
-        'CNN-RNN': CNN_RNN,
-        'CNN-LSTM': CNN_LSTM,
-        'DAE-RNN': DAE_RNN,
-        'DAE-LSTM': DAE_LSTM,
-        'Attention': AttentionModel
-    }
+    model_names = ['CNN-RNN', 'CNN-LSTM', 'Semantic-CNN-LSTM']
+    # ['CNN-RNN', 'CNN-LSTM']
+    # ['DAE-RNN','DAE-LSTM']
+    # ['Semantic-CNN-LSTM', 'Semantic-DAE-LSTM']
 
     # Train and test models
     print("\n[Training and Testing Models]")
     histories, results = train_multiple_models(
-        model_classes,
+        model_names,
         train_loader,
         val_loader,
         test_loader,
